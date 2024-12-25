@@ -1,74 +1,48 @@
-# Contributor Covenant Code of Conduct
+Import xgboost as xgb
 
-## Our Pledge
+# Cálculo del valor esperado con modelo Prophet y variables exógenas
+model = Prophet(daily_seasonality=True, yearly_seasonality=True)
+model.add_regressor('exogenous_variable')
+model.fit(df)
+future = model.make_future_dataframe(periods=1)
+future['exogenous_variable'] = future_exogenous_variables
+forecast = model.predict(future)
 
-In the interest of fostering an open and welcoming environment, we as
-contributors and maintainers pledge to making participation in our project and
-our community a harassment-free experience for everyone, regardless of age, body
-size, disability, ethnicity, gender identity and expression, level of experience,
-nationality, personal appearance, race, religion, or sexual identity and
-orientation.
+# Modelo híbrido Transformer-LSTM con atención multi-cabeza y concatenación
+model = Sequential()
+model.add(TransformerBlock(num_heads=8, embed_dim=64))
+model.add(LSTM(units=32, return_sequences=True))
+# ...
 
-## Our Standards
+# Evaluación con métricas de precisión y cobertura
+# ...
 
-Examples of behavior that contributes to creating a positive environment
-include:
+# Interpretabilidad con SHAP y LIME
+# ...
 
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
+# Modelo XGBoost
+xgb_model = xgb.XGBRegressor()
+xgb_model.fit(X_train, y_train)
 
-Examples of unacceptable behavior by participants include:
+# Selección de características con XGBoost
+importance = pd.Series(xgb_model.feature_importances_, index=X_train.columns)
+selector = SelectFromModel(xgb_model, prefit=True)
+X_train_selected = selector.transform(X_train)
+X_test_selected = selector.transform(X_test)
 
-* The use of sexualized language or imagery and unwelcome sexual attention or
-advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or electronic
-  address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+# Entrenamiento del modelo XGBoost para predicciones
+xgb_model = xgb.XGBRegressor()
+xgb_model.fit(X_train, y_train)
+xgb_preds = xgb_model.predict(X_test)
 
-## Our Responsibilities
+# Añadir predicciones XGBoost como característica adicional
+X_train_combined = np.concatenate((X_train, xgb_preds.reshape(-1,1)), axis=1)
+X_test_combined = np.concatenate((X_test, xgb_preds.reshape(-1,1)), axis=1)
 
-Project maintainers are responsible for clarifying the standards of acceptable
-behavior and are expected to take appropriate and fair corrective action in
-response to any instances of unacceptable behavior.
-
-Project maintainers have the right and responsibility to remove, edit, or
-reject comments, commits, code, wiki edits, issues, and other contributions
-that are not aligned to this Code of Conduct, or to ban temporarily or
-permanently any contributor for other behaviors that they deem inappropriate,
-threatening, offensive, or harmful.
-
-## Scope
-
-This Code of Conduct applies both within project spaces and in public spaces
-when an individual is representing the project or its community. Examples of
-representing a project or community include using an official project e-mail
-address, posting via an official social media account, or acting as an appointed
-representative at an online or offline event. Representation of a project may be
-further defined and clarified by project maintainers.
-
-## Enforcement
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the project team at <opensource@github.com>. All
-complaints will be reviewed and investigated and will result in a response that
-is deemed necessary and appropriate to the circumstances. The project team is
-obligated to maintain confidentiality with regard to the reporter of an incident.
-Further details of specific enforcement policies may be posted separately.
-
-Project maintainers who do not follow or enforce the Code of Conduct in good
-faith may face temporary or permanent repercussions as determined by other
-members of the project's leadership.
-
-## Attribution
-
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
-available at [http://contributor-covenant.org/version/1/4][version]
-
-[homepage]: http://contributor-covenant.org
-[version]: http://contributor-covenant.org/version/1/4/
+# Entrenamiento del modelo híbrido con características combinadas
+model = Sequential()
+model.add(TransformerBlock(num_heads=8, embed_dim=64))
+model.add(LSTM(units=32, return_sequences=True))
+# ... (resto de la arquitectura del modelo)
+model.compile(loss='mse', optimizer='adam')
+model.fit(X_train_combined, y_train, epochs=10, validation_data=(X_test_combined, y_test))
